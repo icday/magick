@@ -359,6 +359,20 @@ do
       w, h = self:_keep_aspect(w, h)
       return handle_result(self, lib.MagickAdaptiveResizeImage(self.wand, w, h))
     end,
+    adaptive_resize_and_crop = function(self, w, h)
+      local src_w, src_h = self:get_width(), self:get_height()
+      local ar_src = src_w / src_h
+      local ar_dest = w / h
+      if ar_dest > ar_src then
+        local new_height = w / ar_src
+        self:adaptive_resize(w, new_height)
+        return self:crop(w, h, 0, (new_height - h) / 2)
+      else
+        local new_width = h * ar_src
+        self:adaptive_resize(new_width, h)
+        return self:crop(w, h, (new_width - w) / 2, 0)
+      end
+    end,
     scale = function(self, w, h)
       w, h = self:_keep_aspect(w, h)
       return handle_result(self, lib.MagickScaleImage(self.wand, w, h))
