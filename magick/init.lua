@@ -71,6 +71,8 @@ ffi.cdef([[  typedef void MagickWand;
   double PixelGetRed(const PixelWand *);
   double PixelGetGreen(const PixelWand *);
   double PixelGetBlue(const PixelWand *);
+  MagickBooleanType MagickRotateImage(MagickWand *wand, const PixelWand *background,
+    const double degrees);
 ]])
 local get_flags
 get_flags = function()
@@ -439,6 +441,11 @@ do
         return self:scale(w, h)
       end
     end,
+    resize_and_crop_by_new_size = function(self, w, h, nw, nh)
+      local src_w, src_h = self:get_width(), self:get_height()
+      self:crop(nw, nh, (src_w - nw) / 2, (src_h - nh) / 4)
+      return self:resize(w, h)
+    end,
     get_blob = function(self)
       local len = ffi.new("size_t[1]", 0)
       local blob = lib.MagickGetImageBlob(self.wand, len)
@@ -465,6 +472,12 @@ do
       self.pixel_wand = self.pixel_wand or lib.NewPixelWand()
       assert(lib.MagickGetImagePixelColor(self.wand, x, y, self.pixel_wand), "failed to get pixel")
       return lib.PixelGetRed(self.pixel_wand), lib.PixelGetGreen(self.pixel_wand), lib.PixelGetBlue(self.pixel_wand), lib.PixelGetAlpha(self.pixel_wand)
+    end,
+    rotate = function(self, degree)
+        local pixel_wand = lib.NewPixelWand()
+        local result = lib.MagickRotateImage(self.wand, pixel_wand, degree);
+        lib.DestroyPixelWand(pixel_wand)
+        return handle_result(self, result)
     end,
     __tostring = function(self)
       return "Image<" .. tostring(self.path) .. ", " .. tostring(self.wand) .. ">"
